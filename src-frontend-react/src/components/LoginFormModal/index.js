@@ -76,7 +76,8 @@ export const LoginFormModal = ({ show, onHide, isLoggingIn }) => {
 
   useEffect(() => {
     socket.on("connect_error", (err) => {
-      console.log(err.message)
+      console.log(`Socket.io error due to: ${err.message}`)
+      console.log(err)
     });
   }, [])
   return (
