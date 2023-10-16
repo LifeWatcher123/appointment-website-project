@@ -4,6 +4,16 @@ const prisma = new PrismaClient();
 const jwt = require('jsonwebtoken');
 const { findRefreshTokenById } = require("../routes/auth.services");
 const { db } = require("../db");
+// get the Console class
+const { Console } = require("console");
+// get fs module for creating write streams
+const fs = require("fs");
+
+// make a new logger
+const myLogger = new Console({
+  stdout: fs.createWriteStream("normalStdout.txt"),
+  stderr: fs.createWriteStream("errStdErr.txt"),
+});
 
 class Connection {
   constructor(io, socket) {
@@ -14,12 +24,14 @@ class Connection {
 
     socket.on('disconnect', () => this.disconnect());
     socket.on('connect_error', (err) => {
-      console.log(`connect_error due to ${err.message}`);
+      myLogger.log(`connect_error due to ${err.message}`);
+      myLogger.log("Error Object: ")
+      myLogger.log(err)
     });
   }
 
   disconnect() {
-    console.log('🔥: A user disconnected');
+    myLogger.log('🔥: A user disconnected');
 
     this.updatePeopleOnline(this.socket.userId, false)
 
@@ -40,52 +52,56 @@ class Connection {
       }
       this.io.emit("users", users);
     } catch (error) {
-      console.error(error);
+      myLogger.error(error);
     }
   }
 }
 
 function connect(io) {
   io.use(async (socket, next) => {
-    const accessToken = socket.handshake.auth.accessToken;
-    const refreshToken = socket.handshake.auth.refreshToken
-    const userId = findUserIdByAccessToken(accessToken)
+    try {
+      const accessToken = socket.handshake.auth.accessToken;
+      const refreshToken = socket.handshake.auth.refreshToken
+      const userId = findUserIdByAccessToken(accessToken)
 
-    if (!userId)
-      return next(new Error("invalid access token"))
+      if (!userId)
+        return next(new Error("invalid access token"))
 
-    const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const savedRefreshToken = await findRefreshTokenById(payload.jti);
-    console.log(savedRefreshToken)
+      const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+      const savedRefreshToken = await findRefreshTokenById(payload.jti);
+      myLogger.log(savedRefreshToken)
 
-    if (!savedRefreshToken || savedRefreshToken.revoked === true) {
-      return next(new Error('unauthorized session'));
-    }
-
-    const user = await db.user.findUnique({
-      where: {
-        id: userId,
-      },
-      select: {
-        login_username: true,
-        fname: true,
-        mname: true,
-        lname: true,
-        type: true
+      if (!savedRefreshToken || savedRefreshToken.revoked === true) {
+        return next(new Error('unauthorized session'));
       }
-    });
+
+      const user = await db.user.findUnique({
+        where: {
+          id: userId,
+        },
+        select: {
+          login_username: true,
+          fname: true,
+          mname: true,
+          lname: true,
+          type: true
+        }
+      });
 
 
-    socket.userId = userId
-    socket.login_username = user.login_username
-    socket.fname = user.fname
-    socket.mname = user.mname
-    socket.lname = user.lname
-    socket.type = user.type
-    next()
+      socket.userId = userId
+      socket.login_username = user.login_username
+      socket.fname = user.fname
+      socket.mname = user.mname
+      socket.lname = user.lname
+      socket.type = user.type
+      next()
+    } catch (err) {
+      myLogger.error(err)
+    }
   })
   io.on('connect', (socket) => {
-    console.log(`⚡: ${socket.id} user just connected!`);
+    myLogger.log(`⚡: ${socket.id} user just connected!`);
     new Connection(io, socket)
     socket.join(socket.userId)
 
