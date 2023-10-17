@@ -72,7 +72,7 @@ function connect(io) {
       myLogger.log(savedRefreshToken)
 
       if (!savedRefreshToken || savedRefreshToken.revoked === true) {
-        return next(new Error(`unauthorized session. ${savedRefreshToken} | ${payload} | ${process.env.JWT_REFRESH_SECRET}`));
+        return next(new Error(`sorry. unauthorized session. ${savedRefreshToken} | ${payload} | ${process.env.JWT_REFRESH_SECRET}`));
       }
 
       const user = await db.user.findUnique({
