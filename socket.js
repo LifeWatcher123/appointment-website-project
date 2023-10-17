@@ -10,7 +10,7 @@ function initializeSocket(httpServer) {
     if (!ioInstance) {
       ioInstance = socketIO(httpServer, {
         cors: {
-          origin: "http://localhost:3000",
+          origin: "*",
           methods: ["GET", "POST"],
           credentials: true
         }
