@@ -4,16 +4,32 @@ const prisma = new PrismaClient();
 const jwt = require('jsonwebtoken');
 const { findRefreshTokenById } = require("../routes/auth.services");
 const { db } = require("../db");
-// get the Console class
-const { Console } = require("console");
-// get fs module for creating write streams
-const fs = require("fs");
 
-// make a new logger
-const myLogger = new Console({
-  stdout: fs.createWriteStream("normalStdout.txt"),
-  stderr: fs.createWriteStream("errStdErr.txt"),
+const winston = require('winston');
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  defaultMeta: { service: 'user-service' },
+  transports: [
+    //
+    // - Write all logs with importance level of `error` or less to `error.log`
+    // - Write all logs with importance level of `info` or less to `combined.log`
+    //
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+  ],
 });
+
+//
+// If we're not in production then log to the `console` with the format:
+// `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
+//
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.simple(),
+  }));
+}
 
 class Connection {
   constructor(io, socket) {
@@ -24,14 +40,14 @@ class Connection {
 
     socket.on('disconnect', () => this.disconnect());
     socket.on('connect_error', (err) => {
-      myLogger.log(`connect_error due to ${err.message}`);
-      myLogger.log("Error Object: ")
-      myLogger.log(err)
+      logger.error(`connect_error due to ${err.message}`);
+      logger.error("Error Object: ")
+      logger.error(err)
     });
   }
 
   disconnect() {
-    myLogger.log('🔥: A user disconnected');
+    logger.info('🔥: A user disconnected');
 
     this.updatePeopleOnline(this.socket.userId, false)
 
@@ -52,7 +68,7 @@ class Connection {
       }
       this.io.emit("users", users);
     } catch (error) {
-      myLogger.error(error);
+      logger.error(error);
     }
   }
 }
@@ -69,7 +85,7 @@ function connect(io) {
 
       const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
       const savedRefreshToken = await findRefreshTokenById(payload.jti);
-      myLogger.log(savedRefreshToken)
+      logger.info(savedRefreshToken)
 
       if (!savedRefreshToken || savedRefreshToken.revoked === true) {
         return next(new Error(`sorry. unauthorized session. ${savedRefreshToken} | ${payload} | ${process.env.JWT_REFRESH_SECRET}`));
@@ -97,11 +113,11 @@ function connect(io) {
       socket.type = user.type
       next()
     } catch (err) {
-      myLogger.error(err)
+      logger.error(err)
     }
   })
   io.on('connect', (socket) => {
-    myLogger.log(`⚡: ${socket.id} user just connected!`);
+    logger.info(`⚡: ${socket.id} user just connected!`);
     new Connection(io, socket)
     socket.join(socket.userId)
 
