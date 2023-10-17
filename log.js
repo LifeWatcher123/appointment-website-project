@@ -29,6 +29,7 @@ var logger = new (winston.Logger)({
   ],
   exitOnError: false
 });
+logger.info('*** Requested for First log... ***');
 
 module.exports = logger;
 module.exports.stream = {
