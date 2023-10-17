@@ -7,6 +7,8 @@ const { db } = require("../db");
 
 const logger = require('../log.js');
 
+logger.info('*** Requested for First log... ***');
+
 class Connection {
   constructor(io, socket) {
     this.socket = socket;
