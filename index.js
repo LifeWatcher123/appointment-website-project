@@ -40,6 +40,11 @@ connect(socketIO)
 // For testing, add intentional delay
 // app.use(function(req, res, next) { setTimeout(next, 500) });
 
+// Define a catch-all route at the end of your routes
+app.all('*', (req, res) => {
+  res.redirect('/');
+});
+
 // Frontend Static
 const path = __dirname + "/src-frontend-react/build/";
 app.use(express.static(path));
