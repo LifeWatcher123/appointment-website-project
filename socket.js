@@ -11,8 +11,6 @@ function initializeSocket(httpServer) {
       ioInstance = socketIO(httpServer, {
         cors: {
           origin: "*",
-          methods: ["GET", "POST"],
-          credentials: true
         }
       });
     }
