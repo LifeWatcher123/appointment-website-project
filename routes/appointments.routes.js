@@ -202,7 +202,8 @@ router.get("/schedules/by-user/:id", async (req, res, next) => {
           {
             OR: [
               { Users: { some: { id: userId } } },
-              { authorUserId: userId }
+              { authorUserId: userId },
+              { state: schedule_state.Available }
             ]
           }
         ]

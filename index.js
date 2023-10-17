@@ -93,6 +93,11 @@ app.post("/backend/fakestaffuser", async (req, res) => {
   }
 })
 
+// Define a catch-all route at the end of your routes
+app.all('*', (req, res) => {
+  res.redirect('/');
+});
+
 module.exports = app;
 
 // // Create (POST) a Name
